@@ -75,6 +75,7 @@ export interface UseMessageSenderOptions {
   closeContextUsageDialog: (requestId?: string | null) => boolean;
   startCodexCompaction: () => void;
   codexCompactionPending?: boolean;
+  handleLocalCommand?: (text: string) => boolean;
 }
 
 /**
@@ -115,6 +116,7 @@ export function useMessageSender({
   closeContextUsageDialog,
   startCodexCompaction,
   codexCompactionPending = false,
+  handleLocalCommand,
 }: UseMessageSenderOptions) {
   /**
    * Check if the input is a new session command
@@ -521,6 +523,9 @@ export function useMessageSender({
     // Check new session commands
     if (checkNewSessionCommand(text)) return;
 
+    // GUI-local commands (/status, /config, /export, …) never reach the model
+    if (!hasAttachments && handleLocalCommand?.(text)) return;
+
     // Check local-handled commands (/resume, /plan)
     if (checkLocalCommand(text)) return;
 
@@ -552,7 +557,7 @@ export function useMessageSender({
 
     // Execute message
     executeMessage(content, attachments);
-  }, [checkNewSessionCommand, checkLocalCommand, checkContextCommand, checkCodexControlCommand, checkUnimplementedCommand, executeMessage, currentProvider, handleModeSelect]);
+  }, [checkNewSessionCommand, checkLocalCommand, checkContextCommand, checkCodexControlCommand, checkUnimplementedCommand, executeMessage, currentProvider, handleModeSelect, handleLocalCommand]);
 
   /**
    * Interrupt the current session

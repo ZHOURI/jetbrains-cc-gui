@@ -607,6 +607,39 @@ debounceTimerRef.current = window.setTimeout(() => {
 
 ---
 
+## GUI 本地斜杠命令
+
+以下命令由 WebView 本地处理，**不会发送给模型**（Agent SDK 也不认识它们）：
+
+| 命令 | 行为 | 实现 |
+|------|------|------|
+| `/status` | 聊天流内展示插件 / IDE / Node / SDK / 会话信息卡片 | `get_status_info` → `window.onStatusInfo` |
+| `/doctor` | Node、SDK、CLI 工具诊断卡片 + 跳转依赖管理 | 同上（`kind=doctor`） |
+| `/memory` | Claude / Codex 记忆文件路径与存在状态，可直接打开 | 同上（`kind=memory`） |
+| `/hooks` | hooks 配置文件路径与是否配置，可直接打开 | 同上（`kind=hooks`） |
+| `/help` | 本地命令说明卡片 | 纯前端 |
+| `/export` | 导出当前会话 | 复用 `export_session` |
+| `/config` | 打开设置 → 基础 | 前端切换视图 |
+| `/model` | 打开设置 → 模型与服务 | 前端切换视图 |
+| `/permissions` | 打开设置 → 权限 | 前端切换视图 |
+| `/agents` | 打开设置 → 智能体 | 前端切换视图 |
+| `/cost` | 打开设置 → 用量统计 | 前端切换视图 |
+
+关键文件：
+
+| 功能 | 文件位置 |
+|-----|---------|
+| 命令解析 | `webview/src/hooks/localCommandDispatcher.ts` |
+| 卡片数据构建 | `webview/src/hooks/localCommandCards.ts` |
+| 命令执行与异步请求 | `webview/src/hooks/useLocalSlashCommands.ts` |
+| 卡片渲染 | `webview/src/components/MessageItem/blocks/LocalCommandOutputBlock.tsx` |
+| 后端数据源 | `src/main/java/com/github/claudecodegui/handler/StatusCommandHandler.java` |
+| 快照保留 | `webview/src/hooks/windowCallbacks/messageSync.ts`（`reinsertLocalCommandMessages`） |
+
+执行链路：`handleSubmit` → `useLocalSlashCommands.handleLocalCommand` → 命中则直接插入卡片/跳转设置并 `return`；异步类命令先插入 loading 卡片，再通过 `get_status_info` 请求后端并替换。
+
+---
+
 ## 常见问题
 
 ### Q1: 为什么只在行首触发？
@@ -639,6 +672,12 @@ debounceTimerRef.current = window.setTimeout(() => {
 如果要在前端过滤或修改命令显示：
 1. 编辑 `slashCommandProvider.ts` 中的 `HIDDEN_COMMANDS`
 2. 或修改 `commandToDropdownItem()` 函数
+
+如果要新增 **GUI 本地命令**（不发送给模型）：
+1. 在 `SlashCommandRegistry.CLAUDE_BUILTIN` 注册命令（保证下拉列表可见）
+2. 在 `localCommandDispatcher.ts` 加入命令 ID
+3. 在 `useLocalSlashCommands.handleLocalCommand` 实现行为，并在 `localCommandCards.ts` 构建卡片
+4. 异步数据类命令在 `StatusCommandHandler` 增加 `kind` 分支
 
 ### Q5: 键盘导航支持哪些按键？
 

@@ -336,6 +336,31 @@ describe('useMessageSender - /context command', () => {
     expect((window.sendToJava as any).mock.calls.filter((call: [string]) => call[0].startsWith('send_message:'))).toHaveLength(1);
   });
 
+  it('routes GUI-local commands through handleLocalCommand without touching the bridge', () => {
+    const handleLocalCommand = vi.fn().mockReturnValue(true);
+    const opts = createOptions({ handleLocalCommand });
+    const { result } = renderHook(() => useMessageSender(opts));
+
+    act(() => { result.current.handleSubmit('/status'); });
+
+    expect(handleLocalCommand).toHaveBeenCalledWith('/status');
+    expect(window.sendToJava).not.toHaveBeenCalled();
+    expect(opts.setMessages).not.toHaveBeenCalled();
+  });
+
+  it('does not treat a local command carrying attachments as local', () => {
+    const handleLocalCommand = vi.fn().mockReturnValue(true);
+    const opts = createOptions({ handleLocalCommand });
+    const { result } = renderHook(() => useMessageSender(opts));
+
+    act(() => { result.current.handleSubmit('/status', [{
+      id: 'att-1', fileName: 'note.txt', mediaType: 'text/plain', data: 'aGVsbG8=',
+    }]); });
+
+    expect(handleLocalCommand).not.toHaveBeenCalled();
+    expect(getBridgePayload('send_message_with_attachments').text).toBe('/status');
+  });
+
   it('reuses the optimistic message identity in the backend payload', () => {
     const setMessages = vi.fn();
     const opts = createOptions({ currentProvider: 'codex', setMessages });

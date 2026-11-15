@@ -1660,3 +1660,142 @@
     align-self: stretch;
     width: 100%;
 }
+
+/* GUI-local slash command output card (/status, /doctor, /memory, /hooks, …) */
+.local-command-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.local-command-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.local-command-chip {
+    font-family: var(--cc-gui-code-font-family, var(--idea-editor-font-family, 'JetBrains Mono', 'Consolas', monospace));
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    padding: 1px 6px;
+    flex-shrink: 0;
+}
+
+.local-command-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.local-command-subtitle {
+    font-size: 11.5px;
+    color: var(--text-tertiary);
+    margin-top: -4px;
+}
+
+.local-command-note {
+    font-size: 12px;
+    color: var(--text-tertiary);
+}
+
+.local-command-error {
+    font-size: 12px;
+    color: var(--color-error);
+}
+
+.local-command-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.local-command-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+.local-command-row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.local-command-row-label {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+    min-width: 112px;
+}
+
+.local-command-row-main {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+
+.local-command-row-path {
+    font-family: var(--cc-gui-code-font-family, var(--idea-editor-font-family, 'JetBrains Mono', 'Consolas', monospace));
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.local-command-row-value {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.local-command-row-value.is-ok {
+    color: var(--color-success);
+}
+
+.local-command-row-value.is-warn {
+    color: var(--text-warning);
+}
+
+.local-command-row-value.is-error {
+    color: var(--color-error);
+}
+
+.local-command-row-open,
+.local-command-action {
+    font-size: 11.5px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-primary);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.local-command-row-open:hover,
+.local-command-action:hover {
+    color: var(--text-primary);
+    border-color: var(--text-tertiary);
+}
+
+.local-command-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 2px;
+}

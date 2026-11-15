@@ -184,10 +184,18 @@ export function useStreamingMessages(): UseStreamingMessagesReturn {
     return nextBlocks;
   };
 
+  // Local slash-command cards also use type 'assistant' but never receive
+  // streamed tokens, so they must not be treated as the streaming target.
+  const isLocalCommandMessage = (message: ClaudeMessage | undefined): boolean => {
+    const raw = message?.raw;
+    return typeof raw === 'object' && raw !== null
+      && (raw as Record<string, unknown>).isLocalCommandOutput === true;
+  };
+
   // Helper: Find last assistant message index
   const findLastAssistantIndex = (list: ClaudeMessage[]): number => {
     for (let i = list.length - 1; i >= 0; i -= 1) {
-      if (list[i]?.type === 'assistant') return i;
+      if (list[i]?.type === 'assistant' && !isLocalCommandMessage(list[i])) return i;
     }
     return -1;
   };
@@ -399,7 +407,8 @@ export function useStreamingMessages(): UseStreamingMessagesReturn {
    */
   const getOrCreateStreamingAssistantIndex = (list: ClaudeMessage[]): number => {
     const currentIdx = streamingMessageIndexRef.current;
-    if (currentIdx >= 0 && currentIdx < list.length && list[currentIdx]?.type === 'assistant') {
+    if (currentIdx >= 0 && currentIdx < list.length
+      && list[currentIdx]?.type === 'assistant' && !isLocalCommandMessage(list[currentIdx])) {
       return currentIdx;
     }
     const lastAssistantIdx = findLastAssistantIndex(list);

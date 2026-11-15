@@ -3,6 +3,7 @@ package com.github.claudecodegui.ui;
 import com.github.claudecodegui.session.ClaudeSession;
 import com.github.claudecodegui.settings.CodemossSettingsService;
 import com.github.claudecodegui.handler.AgentHandler;
+import com.github.claudecodegui.handler.AgentViewHandler;
 import com.github.claudecodegui.handler.ClipboardHandler;
 import com.github.claudecodegui.handler.ContextHandler;
 import com.github.claudecodegui.handler.CodexInteractionHandler;
@@ -13,6 +14,7 @@ import com.github.claudecodegui.handler.CodexPetHandler;
 import com.github.claudecodegui.handler.CliModelsHandler;
 import com.github.claudecodegui.handler.CliStatusHandler;
 import com.github.claudecodegui.handler.DshHostHandler;
+import com.github.claudecodegui.handler.StatusCommandHandler;
 import com.github.claudecodegui.handler.DependencyHandler;
 import com.github.claudecodegui.handler.DiffHandler;
 import com.github.claudecodegui.handler.core.HandlerContext;
@@ -142,6 +144,11 @@ public class ChatWindowDelegate {
         void loadRestoredHistoryManually();
         void cancelRestoredHistoryLoad(String requestId);
         void retireRestoredHistory();
+
+        /** Agent View session registry, or {@code null} in hosts that do not support it. */
+        default com.github.claudecodegui.session.AgentSessionRegistry getAgentSessionRegistry() {
+            return null;
+        }
 
         /**
          * Soft-reload the currently active session's transcript without interrupting
@@ -590,6 +597,10 @@ public class ChatWindowDelegate {
         messageDispatcher.registerHandler(new DependencyHandler(handlerContext));
         messageDispatcher.registerHandler(new CliModelsHandler(handlerContext));
         messageDispatcher.registerHandler(new CliStatusHandler(handlerContext));
+        messageDispatcher.registerHandler(new StatusCommandHandler(handlerContext));
+        if (host.getAgentSessionRegistry() != null) {
+            messageDispatcher.registerHandler(new AgentViewHandler(handlerContext, host.getAgentSessionRegistry()));
+        }
         messageDispatcher.registerHandler(new DshHostHandler(handlerContext));
         this.clipboardHandler = new ClipboardHandler(handlerContext);
         messageDispatcher.registerHandler(this.clipboardHandler);

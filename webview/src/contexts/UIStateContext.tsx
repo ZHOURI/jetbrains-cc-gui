@@ -56,6 +56,10 @@ export interface UIStateContextValue {
   // In-conversation search panel (Cmd/Ctrl+F)
   searchOpen: boolean;
   setSearchOpen: React.Dispatch<React.SetStateAction<boolean>>;
+
+  // Agent View panel (double ← in an empty composer)
+  agentViewOpen: boolean;
+  setAgentViewOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const UIStateContext = createContext<UIStateContextValue | null>(null);
@@ -90,6 +94,7 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
     if (!next || document.visibilityState === 'hidden') void writeDraft(next);
   }, []);
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  const [agentViewOpen, setAgentViewOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (!draftCacheKey()) return;
@@ -162,6 +167,7 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
       contextInfo, setContextInfo,
       draftInput, setDraftInput,
       searchOpen, setSearchOpen,
+      agentViewOpen, setAgentViewOpen,
     }),
     [
       currentView, settingsInitialTab,
@@ -171,6 +177,7 @@ export function UIStateProvider({ children }: { children: ReactNode }) {
       showChangelogDialog, closeChangelogDialog, openChangelogDialog,
       contextInfo, draftInput,
       searchOpen,
+      agentViewOpen,
     ],
   );
 

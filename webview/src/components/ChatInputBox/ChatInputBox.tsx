@@ -67,6 +67,7 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       onOpenAgentSettings,
       onOpenPromptSettings,
       onOpenModelSettings,
+      onOpenAgentView,
       onOpenCliSettings,
       hasMessages = false,
       onRewind,
@@ -156,6 +157,7 @@ export const ChatInputBox = memo(forwardRef<ChatInputBoxHandle, ChatInputBoxProp
       onAgentSelect,
       onOpenAgentSettings,
       onOpenPromptSettings,
+      onOpenAgentView,
       t,
       ref,
     });

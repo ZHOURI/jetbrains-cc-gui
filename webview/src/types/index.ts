@@ -1,3 +1,5 @@
+import type { LocalCommandOutputBlock } from './localCommand';
+
 export type ClaudeRole = 'user' | 'assistant' | 'error' | 'task_notification' | 'notification' | 'compact_notification' | string;
 
 export type ToolInput = Record<string, unknown>;
@@ -62,7 +64,8 @@ export type ClaudeContentBlock =
   | { type: 'attachment'; fileName?: string; mediaType?: string }
   | { type: 'task_notification'; icon: string; summary: string; status: string; detail?: string }
   | { type: 'compact_notification'; headerText: string; items: CompactNotificationItem[] }
-  | { type: 'compact_summary'; title: string; content: string; metadata?: CompactSummaryMetadata };
+  | { type: 'compact_summary'; title: string; content: string; metadata?: CompactSummaryMetadata }
+  | LocalCommandOutputBlock;
 
 export interface ToolResultBlock {
   type: 'tool_result';
@@ -168,6 +171,53 @@ export interface HistoryData {
   nativeRequestId?: string;
   cursor?: unknown;
   partial?: boolean;
+}
+
+/**
+ * One row of the Agent View panel: a conversation runtime living in this
+ * window, either displayed (isActive) or continuing in the background.
+ */
+export interface AgentViewSession {
+  key: string;
+  sessionId?: string | null;
+  title?: string | null;
+  provider?: string;
+  model?: string;
+  status: 'idle' | 'streaming' | 'waiting';
+  busy: boolean;
+  unread: boolean;
+  messageCount: number;
+  /** Epoch millis of the last message/state activity. */
+  lastActivity: number;
+  isActive: boolean;
+  owned: boolean;
+}
+
+export interface AgentViewListResponse {
+  requestId?: string;
+  activeKey?: string | null;
+  sessions: AgentViewSession[];
+}
+
+export interface AgentViewAttached {
+  requestId?: string;
+  key: string;
+  ok: boolean;
+  sessionId?: string | null;
+}
+
+export interface AgentViewStopped {
+  requestId?: string;
+  key: string;
+  ok: boolean;
+  wasActive: boolean;
+}
+
+export interface AgentViewError {
+  requestId?: string | null;
+  key?: string | null;
+  code: string;
+  message: string;
 }
 
 // File changes types

@@ -14,6 +14,7 @@ import { CHANGELOG_DATA } from '../version/changelog';
 import { useDialogs } from '../contexts/DialogContext';
 import { useUIState } from '../contexts/UIStateContext';
 import ContextUsageDialog from './ContextUsageDialog';
+import AgentViewPanel from './AgentView/AgentViewPanel';
 import WorkspaceDiffDialog from './WorkspaceDiffDialog';
 import { DEFAULT_PERMISSION_DIALOG_TIMEOUT_SECONDS } from '../utils/permissionDialogTimeout';
 import { setSkipNewSessionConfirm } from '../utils/skipNewSessionConfirm';
@@ -67,6 +68,8 @@ export interface AppDialogsProps {
   permissionDialogTimeoutSeconds?: number;
   /** Apply the execution mode chosen while approving a Claude plan. */
   onPlanApprovalModeChange?: (mode: string) => void;
+  /** Agent View attach/new/stop swaps sessions through useSessionManagement's guard. */
+  onBeginAgentSessionTransition: (title: string | null) => void;
 }
 
 /**
@@ -90,6 +93,7 @@ export const AppDialogs = ({
   currentProvider,
   permissionDialogTimeoutSeconds = DEFAULT_PERMISSION_DIALOG_TIMEOUT_SECONDS,
   onPlanApprovalModeChange,
+  onBeginAgentSessionTransition,
 }: AppDialogsProps) => {
   const { t } = useTranslation();
   const {
@@ -220,6 +224,7 @@ export const AppDialogs = ({
           onClose={closeContextUsageDialog}
         />
       ) : null}
+      <AgentViewPanel onBeginSessionTransition={onBeginAgentSessionTransition} />
       <WorkspaceDiffDialog />
     </>
   );

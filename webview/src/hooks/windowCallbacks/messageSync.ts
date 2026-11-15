@@ -1020,6 +1020,77 @@ export const ensureStreamingAssistantInList = (
 };
 
 // ---------------------------------------------------------------------------
+// GUI-local command cards
+// ---------------------------------------------------------------------------
+
+/** Local slash-command output cards never exist in backend transcripts. */
+export const isLocalCommandOutputMessage = (message: ClaudeMessage | undefined): boolean => {
+  const raw = parseRawMessage(message?.raw);
+  return raw?.isLocalCommandOutput === true;
+};
+
+/**
+ * Re-insert GUI-local command cards (e.g. /status) that backend snapshots drop.
+ * Each card remembers the uuid of the message it was appended after; when that
+ * anchor is still present the card goes back in the same place, otherwise it is
+ * appended at the end so the user never loses the output mid-conversation.
+ */
+export const reinsertLocalCommandMessages = (
+  prevList: ClaudeMessage[],
+  nextList: ClaudeMessage[],
+): ClaudeMessage[] => {
+  const cards = prevList.filter(isLocalCommandOutputMessage);
+  if (cards.length === 0) return nextList;
+
+  const presentUuids = new Set(
+    nextList.filter(isLocalCommandOutputMessage)
+      .map((message) => getRawUuid(message))
+      .filter((uuid): uuid is string => Boolean(uuid)),
+  );
+  const missing = cards.filter((card) => {
+    const uuid = getRawUuid(card);
+    return !uuid || !presentUuids.has(uuid);
+  });
+  if (missing.length === 0) return nextList;
+
+  const result = nextList.slice();
+  // Cards sharing an anchor must keep their original order: each one lands
+  // right after the previously inserted card for that anchor.
+  const lastInsertedForAnchor = new Map<string, number>();
+
+  for (const card of missing) {
+    const raw = parseRawMessage(card.raw);
+    const anchorUuid = typeof raw?.localCommandAnchorUuid === 'string' ? raw.localCommandAnchorUuid : undefined;
+    const anchorIndex = typeof raw?.localCommandAnchorIndex === 'number' ? raw.localCommandAnchorIndex : -1;
+    const anchorKey = anchorUuid ?? `index:${anchorIndex}`;
+
+    let insertAt = -1;
+    if (anchorUuid) {
+      let anchorPosition = -1;
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (getRawUuid(result[i]) === anchorUuid) {
+          anchorPosition = i;
+          break;
+        }
+      }
+      if (anchorPosition >= 0) {
+        insertAt = (lastInsertedForAnchor.get(anchorKey) ?? anchorPosition) + 1;
+      }
+    }
+    if (insertAt < 0 && anchorIndex >= 0) {
+      const base = lastInsertedForAnchor.get(anchorKey) ?? Math.min(anchorIndex, result.length - 1);
+      insertAt = Math.min(base + 1, result.length);
+    }
+    if (insertAt < 0) insertAt = result.length;
+
+    result.splice(insertAt, 0, card);
+    lastInsertedForAnchor.set(anchorKey, insertAt);
+  }
+
+  return result;
+};
+
+// ---------------------------------------------------------------------------
 // Re-export ClaudeRawMessage so callers can use it without an extra import
 // ---------------------------------------------------------------------------
 export type { ClaudeRawMessage };

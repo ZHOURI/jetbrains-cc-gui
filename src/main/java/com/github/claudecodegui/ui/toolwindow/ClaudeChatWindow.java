@@ -5,6 +5,7 @@ import com.github.claudecodegui.handler.core.HandlerContext;
 import com.github.claudecodegui.handler.history.HistoryHandler;
 import com.github.claudecodegui.handler.core.MessageDispatcher;
 import com.github.claudecodegui.handler.PermissionHandler;
+import com.github.claudecodegui.handler.UsagePushService;
 import com.github.claudecodegui.permission.PermissionService;
 import com.github.claudecodegui.provider.claude.ClaudeSDKBridge;
 import com.github.claudecodegui.provider.codex.CodexSDKBridge;
@@ -18,7 +19,9 @@ import com.github.claudecodegui.provider.minimax.MiniMaxCliBridge;
 import com.github.claudecodegui.provider.opencode.OpenCodeCliBridge;
 import com.github.claudecodegui.provider.pi.PiCliBridge;
 import com.github.claudecodegui.provider.omp.OmpCliBridge;
+import com.github.claudecodegui.session.AgentSessionRegistry;
 import com.github.claudecodegui.session.SessionProviderRouter;
+import com.github.claudecodegui.session.SessionRuntime;
 import com.github.claudecodegui.provider.common.DaemonBridge;
 import com.github.claudecodegui.provider.common.MessageCallback;
 import com.github.claudecodegui.session.ClaudeSession;
@@ -237,6 +240,8 @@ public class ClaudeChatWindow {
     // route to the deactivated adapter and be dropped - leaving the subagent
     // stuck on "running".
     private volatile SessionCallbackAdapter sessionCallbackAdapter;
+    /** Live Agent View runtimes; one is active and bound to the window at a time. */
+    private AgentSessionRegistry agentSessionRegistry;
 
     public ClaudeChatWindow(Project project) {
         this(project, false);
@@ -328,6 +333,46 @@ public class ClaudeChatWindow {
 
         this.session = new ClaudeSession(
                 project, claudeSDKBridge, codexSDKBridge, cliBridges, grokSDKBridge, zcodeSDKBridge);
+
+        this.agentSessionRegistry = new AgentSessionRegistry(new AgentSessionRegistry.Host() {
+            @Override
+            public Project getProject() {
+                return project;
+            }
+
+            @Override
+            public String getPermissionSessionId() {
+                return permissionServiceKey;
+            }
+
+            @Override
+            public SessionCallbackAdapter createUiAdapter(SessionRuntime runtime) {
+                return createSessionCallbackAdapter(runtime.getSession());
+            }
+
+            @Override
+            public void onRuntimeActivated(SessionRuntime runtime, SessionCallbackAdapter adapter) {
+                bindRuntimeAsActive(runtime, adapter);
+            }
+
+            @Override
+            public void onRuntimeDeactivated(SessionRuntime runtime) {
+                ClaudeChatWindow.this.retireRestoredHistory();
+            }
+
+            @Override
+            public void onSessionListChanged() {
+                if (disposed || agentSessionRegistry == null) {
+                    return;
+                }
+                callJavaScript("onAgentViewSessions", JsUtils.escapeJs(agentSessionRegistry.listJson("")));
+            }
+
+            @Override
+            public boolean isDisposed() {
+                return disposed;
+            }
+        });
 
         this.chatWindowDelegate = new ChatWindowDelegate(createDelegateHost());
         chatWindowDelegate.loadPermissionModeFromSettings();
@@ -2713,53 +2758,14 @@ public class ClaudeChatWindow {
             this.sessionCallbackAdapter.deactivate();
         }
         ClaudeSession callbackSession = this.session;
-        this.sessionCallbackAdapter = new SessionCallbackAdapter(
-                streamCoalescer,
-                new SessionCallbackAdapter.JsTarget() {
-                    @Override
-                    public void onAssistantActivity() {
-                        if (!disposed && session == callbackSession) {
-                            chatWindowDelegate.onAssistantActivity();
-                        }
-                    }
-
-                    @Override
-                    public void onTurnFailed() {
-                        if (!disposed && session == callbackSession) {
-                            chatWindowDelegate.onTurnFailed();
-                        }
-                    }
-
-                    @Override
-                    public void callJavaScript(String functionName, String... args) {
-                        ClaudeChatWindow.this.callJavaScript(functionName, args);
-                    }
-                },
-                permissionHandler,
-                () -> slashCommandsFetched,
-                this::onStreamEnded
-        ) {
-            /** Keeps window identity and persisted tabs aligned with the bound session. */
-            @Override
-            public void onSessionIdReceived(String newSessionId) {
-                if (newSessionId == null || ClaudeChatWindow.this.session != callbackSession) {
-                    return;
-                }
-                super.onSessionIdReceived(newSessionId);
-                String exposedSessionId = resolveExposedSessionId(newSessionId, ClaudeChatWindow.this.permissionServiceKey);
-                if (exposedSessionId.equals(ClaudeChatWindow.this.sessionId)) {
-                    return;
-                }
-                ClaudeChatWindow.this.sessionId = exposedSessionId;
-                // Tab indexes belong to Swing; history and daemon callbacks run off the EDT.
-                ApplicationManager.getApplication().invokeLater(() -> {
-                    if (!ClaudeChatWindow.this.disposed && ClaudeChatWindow.this.session == callbackSession) {
-                        ClaudeChatWindow.this.persistTabSessionState();
-                    }
-                });
-            }
-        };
-        session.setCallback(sessionCallbackAdapter);
+        this.sessionCallbackAdapter = createSessionCallbackAdapter(callbackSession);
+        if (agentSessionRegistry != null) {
+            // The registry installs a stable callback that survives attach switches;
+            // this adapter is only the window binding for the active runtime.
+            agentSessionRegistry.registerWindowSession(callbackSession, this.sessionCallbackAdapter);
+        } else {
+            callbackSession.setCallback(sessionCallbackAdapter);
+        }
 
         // Wire daemon events directly to frontend (bypasses adapter lifecycle).
         // Calling through sessionCallbackAdapter would silently drop the event
@@ -2890,6 +2896,106 @@ public class ClaudeChatWindow {
             this.claudeSDKBridge.addDaemonEventListener(this.titleEventListener);
         }
 
+        persistTabSessionState();
+    }
+
+    /**
+     * Builds the window-bound adapter for a session. A fresh adapter is created on
+     * every bind (startup rebuild or Agent View attach) so delta throttlers and
+     * stream-end bookkeeping never carry over from a session the user left.
+     */
+    private SessionCallbackAdapter createSessionCallbackAdapter(ClaudeSession callbackSession) {
+        return new SessionCallbackAdapter(
+                streamCoalescer,
+                new SessionCallbackAdapter.JsTarget() {
+                    @Override
+                    public void onAssistantActivity() {
+                        if (!disposed && session == callbackSession) {
+                            chatWindowDelegate.onAssistantActivity();
+                        }
+                    }
+
+                    @Override
+                    public void onTurnFailed() {
+                        if (!disposed && session == callbackSession) {
+                            chatWindowDelegate.onTurnFailed();
+                        }
+                    }
+
+                    @Override
+                    public void callJavaScript(String functionName, String... args) {
+                        ClaudeChatWindow.this.callJavaScript(functionName, args);
+                    }
+                },
+                permissionHandler,
+                () -> slashCommandsFetched,
+                this::onStreamEnded
+        ) {
+            /** Keeps window identity and persisted tabs aligned with the bound session. */
+            @Override
+            public void onSessionIdReceived(String newSessionId) {
+                if (newSessionId == null || ClaudeChatWindow.this.session != callbackSession) {
+                    return;
+                }
+                super.onSessionIdReceived(newSessionId);
+                String exposedSessionId = resolveExposedSessionId(newSessionId, ClaudeChatWindow.this.permissionServiceKey);
+                if (exposedSessionId.equals(ClaudeChatWindow.this.sessionId)) {
+                    return;
+                }
+                ClaudeChatWindow.this.sessionId = exposedSessionId;
+                // Tab indexes belong to Swing; history and daemon callbacks run off the EDT.
+                ApplicationManager.getApplication().invokeLater(() -> {
+                    if (!ClaudeChatWindow.this.disposed && ClaudeChatWindow.this.session == callbackSession) {
+                        ClaudeChatWindow.this.persistTabSessionState();
+                    }
+                });
+            }
+        };
+    }
+
+    /**
+     * Makes an Agent View runtime the displayed conversation. The frontend has
+     * already started a session transition, so the ordering here matters: reset the
+     * coalescer and clear the transcript first, then flush the runtime's snapshot,
+     * and only after that snapshot is accepted send {@code setSessionId} (which
+     * releases the transition guard) and {@code historyLoadComplete}.
+     */
+    private void bindRuntimeAsActive(SessionRuntime runtime, SessionCallbackAdapter adapter) {
+        if (disposed || runtime == null) {
+            return;
+        }
+        ClaudeSession target = runtime.getSession();
+        this.session = target;
+        if (handlerContext != null) {
+            handlerContext.setSession(target);
+        }
+        this.sessionCallbackAdapter = adapter;
+        this.sessionId = resolveExposedSessionId(target.getSessionId(), this.permissionServiceKey);
+
+        long clearBarrier = streamCoalescer.resetStreamState();
+        callJavaScript("clearMessages", String.valueOf(clearBarrier));
+        retireRestoredHistory();
+        new UsagePushService(handlerContext).clearUsageDisplay();
+
+        if (runtime.isBusy() || runtime.isLoading()) {
+            adapter.onStreamStart();
+        } else {
+            callJavaScript("showLoading", "false");
+        }
+
+        final String exposedSessionId = this.sessionId != null ? this.sessionId : "";
+        int messageCount;
+        synchronized (target.getState().getMessageStateLock()) {
+            List<ClaudeSession.Message> messages = target.getState().getMessages();
+            messageCount = messages.size();
+            streamCoalescer.flush(messages, sequence -> {
+                if (disposed) {
+                    return;
+                }
+                callJavaScript("setSessionId", JsUtils.escapeJs(exposedSessionId));
+                callJavaScript("historyLoadComplete", String.valueOf(messageCount));
+            });
+        }
         persistTabSessionState();
     }
 
@@ -3415,6 +3521,9 @@ public class ClaudeChatWindow {
             LOG.warn("Failed to dispose webview bridges: " + e.getMessage(), e);
         }
 
+        if (agentSessionRegistry != null) {
+            agentSessionRegistry.disposeAll();
+        }
         chatWindowDelegate.dispose();
         editorContextTracker.dispose();
         streamCoalescer.dispose();
@@ -3917,6 +4026,11 @@ public class ClaudeChatWindow {
             @Override
             public void persistTabSessionState() {
                 ClaudeChatWindow.this.persistTabSessionState();
+            }
+
+            @Override
+            public AgentSessionRegistry getAgentSessionRegistry() {
+                return agentSessionRegistry;
             }
 
             @Override

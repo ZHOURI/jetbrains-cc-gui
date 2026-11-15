@@ -85,6 +85,12 @@ interface UseSessionManagementReturn {
   updateHistoryTitle: (sessionId: string, newTitle: string) => void;
   applyHistoryTitleLocal: (sessionId: string, newTitle: string) => void;
   convertToCliSession: (sessionId: string) => void;
+  /**
+   * Starts the same transition guard a session switch uses before the Agent
+   * View panel asks the backend to attach/create/stop. Named `begin…` because
+   * the backend's replay completes it (setSessionId / historyLoadComplete).
+   */
+  beginAgentSessionTransition: (title: string | null) => void;
 }
 
 /**
@@ -209,6 +215,10 @@ export function useSessionManagement({
       }
     }, 15_000); // 15 seconds — generous enough for slow history loads
   }, [clearToasts, currentSessionIdRef, setStatus, setLoadingState, setIsThinking, setStreamingActive, setMessages, setCurrentSessionId, setCustomSessionTitle, setUsagePercentage, setUsageUsedTokens, setUsageMaxTokens, setTaskEvents, setSubagentHistories, clearQueuedMessages]);
+
+  const beginAgentSessionTransition = useCallback((title: string | null) => {
+    beginSessionTransition(null, title);
+  }, [beginSessionTransition]);
 
   // Codex keeps a persistent native writer. The backend may refuse an in-use
   // thread, and an optimistic new session would force-release the very work
@@ -626,5 +636,6 @@ export function useSessionManagement({
     updateHistoryTitle,
     applyHistoryTitleLocal,
     convertToCliSession,
+    beginAgentSessionTransition,
   };
 }

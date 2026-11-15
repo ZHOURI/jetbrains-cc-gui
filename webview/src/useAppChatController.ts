@@ -19,6 +19,8 @@ import {
   CONTEXT_COMMANDS,
 } from './hooks/useMessageSender';
 import { parseCodexCommand } from './hooks/codexCommandDispatcher';
+import { isLocalCommandText } from './hooks/localCommandDispatcher';
+import { useLocalSlashCommands } from './hooks/useLocalSlashCommands';
 import { useCodexQuestionResponses } from './hooks/useCodexQuestionResponses';
 import { useCodexTurnActivity } from './hooks/useCodexTurnActivity';
 import { useCodexCompactionStatus } from './hooks/useCodexCompactionStatus';
@@ -226,6 +228,7 @@ export const useAppChatController = ({
     handleConfirmInterrupt, handleCancelInterrupt,
     loadHistorySession, deleteHistorySession, deleteHistorySessions, exportHistorySession,
     toggleFavoriteSession, updateHistoryTitle, applyHistoryTitleLocal, convertToCliSession,
+    beginAgentSessionTransition,
   } = useSessionManagement({
     messages, loading, historyData, currentSessionId, currentSessionIdRef, currentProvider,
     setHistoryData, setMessages, setCurrentView, setCurrentSessionId,
@@ -295,6 +298,20 @@ export const useAppChatController = ({
     forceCreateNewSessionWithProvider(providerId);
   }, [forceCreateNewSessionWithProvider, handleProviderSelect]);
 
+  // ── GUI-local slash commands (/status, /config, …) ──
+  const { handleLocalCommand } = useLocalSlashCommands({
+    t,
+    addToast,
+    currentProvider,
+    currentSessionId,
+    sessionTitle: customSessionTitle
+      || (restoredSessionTitle?.sessionId === currentSessionId ? restoredSessionTitle.title : undefined),
+    exportSession: exportHistorySession,
+    setMessages,
+    setSettingsInitialTab,
+    setCurrentView,
+  });
+
   const {
     handleSubmit: hookHandleSubmit,
     interruptSession,
@@ -315,6 +332,7 @@ export const useAppChatController = ({
     closeContextUsageDialog,
     startCodexCompaction,
     codexCompactionPending,
+    handleLocalCommand,
   });
 
   // ── Message queue ──
@@ -400,6 +418,11 @@ export const useAppChatController = ({
       if (parsedCommand?.kind === 'plan' && currentProvider === 'claude') {
         handleModeSelect('plan');
         addToast(t('chat.planModeEnabled', { defaultValue: 'Plan mode enabled' }), 'info');
+        return;
+      }
+      // GUI-local commands are handled by the webview even while loading
+      if (isLocalCommandText(text)) {
+        hookHandleSubmit(content, attachments);
         return;
       }
       // /context - handled locally even while loading
@@ -490,6 +513,7 @@ export const useAppChatController = ({
     // Session management
     createNewSession, loadHistorySession, deleteHistorySession, deleteHistorySessions,
     exportHistorySession, toggleFavoriteSession, updateHistoryTitle, convertToCliSession,
+    beginAgentSessionTransition,
     showNewSessionConfirm, handleConfirmNewSession, handleCancelNewSession,
     showInterruptConfirm, handleConfirmInterrupt, handleCancelInterrupt,
     // Rewind

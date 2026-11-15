@@ -27,6 +27,7 @@ import {
   preserveLastAssistantIdentity,
   preserveLatestMessagesOnShrink,
   preserveStreamingAssistantContent,
+  reinsertLocalCommandMessages,
   stripDuplicateTrailingToolMessages,
 } from '../messageSync';
 import { clearDeferredTransitionUpdateMessages, releaseSessionTransition } from '../sessionTransition';
@@ -169,7 +170,20 @@ export function registerMessageCallbacks(
       resultList,
       options.currentProviderRef.current,
     );
-    return ensureStreamingAssistantPreserved(prevList, withoutDuplicateToolTail);
+    // Backend snapshots never contain GUI-local command cards; put them back.
+    const withLocalCards = reinsertLocalCommandMessages(prevList, withoutDuplicateToolTail);
+    const streamingIndexBefore = streamingMessageIndexRef.current;
+    const streamingUuid = streamingIndexBefore >= 0
+      ? getRawUuid(prevList[streamingIndexBefore])
+      : undefined;
+    const finalized = ensureStreamingAssistantPreserved(prevList, withLocalCards);
+    // Re-inserted cards shift later assistant indices; re-point the streaming
+    // index at the same message so deltas keep patching the right bubble.
+    if (streamingUuid) {
+      const shiftedIndex = finalized.findIndex((message) => getRawUuid(message) === streamingUuid);
+      if (shiftedIndex >= 0) streamingMessageIndexRef.current = shiftedIndex;
+    }
+    return finalized;
   };
 
   const acceptNativeSnapshots = (

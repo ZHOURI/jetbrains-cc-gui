@@ -1022,6 +1022,8 @@ export interface ChatInputBoxProps {
   onOpenAgentSettings?: () => void;
   /** Open prompt settings callback */
   onOpenPromptSettings?: () => void;
+  /** Pressing ← twice on an empty composer opens the Agent View panel */
+  onOpenAgentView?: () => void;
   /** Open model settings (navigate to provider management to add models) */
   onOpenModelSettings?: () => void;
   /** Open CLI management settings (Settings → Providers → CLI) */

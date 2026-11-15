@@ -224,11 +224,18 @@ public class SessionHandler extends BaseMessageHandler {
             if (!ensureNodeVersionReady()) {
                 return;
             }
+            // Capture the session once: an Agent View attach can swap the active
+            // session between these reads, which would split one send across two
+            // conversations.
+            ClaudeSession session = context.getSession();
+            if (session == null) {
+                return;
+            }
             String currentWorkingDir = determineWorkingDirectory();
-            String previousCwd = context.getSession().getCwd();
+            String previousCwd = session.getCwd();
 
             if (!currentWorkingDir.equals(previousCwd)) {
-                context.getSession().setCwd(currentWorkingDir);
+                session.setCwd(currentWorkingDir);
                 LOG.info("[SessionHandler] Updated working directory: " + currentWorkingDir);
             }
 
@@ -239,14 +246,13 @@ public class SessionHandler extends BaseMessageHandler {
             }
 
             // [FIX] Pass agent prompt and file tags directly to session
-            context.getSession().send(finalPrompt, finalAgentPrompt, finalFileTagPaths,
+            session.send(finalPrompt, finalAgentPrompt, finalFileTagPaths,
                             finalRequestedPermissionMode, finalRequestedReasoningEffort,
                             finalRequestedCodexFastMode, finalRequestedDshPreset, finalClientMessageId,
                             finalNativeCodexSettings)
                 .thenRun(() -> {
                     // Claude now triggers success on actual stream_end callback.
                     // Codex has no stream_end event, keep success trigger at completion.
-                    var session = context.getSession();
                     if (project != null
                             && "codex".equals(session.getProvider())
                             && !session.isManuallyInterrupted()) {

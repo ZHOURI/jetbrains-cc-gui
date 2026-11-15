@@ -199,6 +199,7 @@ export const ChatScreen = ({
     draftInput, setDraftInput,
     openChangelogDialog,
     searchOpen, setSearchOpen,
+    setAgentViewOpen,
   } = useUIState();
   const { enabled: petEnabled, toggle: togglePet } = useCodexPetPreference();
   const codexPetErrorCount = useMemo(
@@ -428,6 +429,7 @@ export const ChatScreen = ({
             setSettingsInitialTab('prompts');
             setCurrentView('settings');
           }}
+          onOpenAgentView={() => setAgentViewOpen(true)}
           onOpenModelSettings={() => {
             setAddModelDialogOpen(true);
           }}

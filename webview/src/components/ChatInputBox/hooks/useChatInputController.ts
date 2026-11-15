@@ -24,6 +24,7 @@ import {
   useResizableChatInputBox,
 } from './index.js';
 import { useChatInputTextPipeline } from './useChatInputTextPipeline.js';
+import { INVISIBLE_CHARS_RE } from './inputHistoryStorage.js';
 import { SessionContext } from '../../../contexts/SessionContext.js';
 import { useUIState } from '../../../contexts/UIStateContext.js';
 import { useContextMenu } from '../../../hooks/useContextMenu.js';
@@ -46,6 +47,7 @@ interface UseChatInputControllerOptions
     | 'onAgentSelect'
     | 'onOpenAgentSettings'
     | 'onOpenPromptSettings'
+    | 'onOpenAgentView'
   > {
   selectedModel: string;
   currentProvider: string;
@@ -86,6 +88,7 @@ export function useChatInputController({
   onAgentSelect,
   onOpenAgentSettings,
   onOpenPromptSettings,
+  onOpenAgentView,
   t,
   ref,
 }: UseChatInputControllerOptions) {
@@ -291,6 +294,11 @@ export function useChatInputController({
     onAutoOpenFileEnabledChange,
   });
 
+  const isInputEmpty = useCallback(
+    () => getTextContent().replace(INVISIBLE_CHARS_RE, '').trim().length === 0,
+    [getTextContent]
+  );
+
   const { onKeyDown: handleKeyDown, onKeyUp: handleKeyUp } = useKeyboardHandler({
     isComposingRef,
     lastCompositionEndTimeRef,
@@ -306,6 +314,8 @@ export function useChatInputController({
     inlineCompletion: inlineCompletion.hasSuggestion ? {
       applySuggestion: applyInlineCompletion,
     } : undefined,
+    isInputEmpty,
+    onOpenAgentView,
     completionSelectedRef,
     submittedOnEnterRef,
     handleSubmit,

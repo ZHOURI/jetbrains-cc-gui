@@ -9,6 +9,7 @@ import { ToolUseBlock } from './blocks/ToolUseBlock';
 import { CompactNotificationBlock } from './blocks/CompactNotificationBlock';
 import { CompactSummaryBlock } from './blocks/CompactSummaryBlock';
 import { TaskNotificationBlock } from './blocks/TaskNotificationBlock';
+import { LocalCommandOutputBlock } from './blocks/LocalCommandOutputBlock';
 
 export interface ContentBlockRendererProps {
   block: ClaudeContentBlock;
@@ -22,6 +23,7 @@ export interface ContentBlockRendererProps {
   t: TFunction;
   onToggleThinking: () => void;
   findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined;
+  onNavigateToDependencySettings?: () => void;
 }
 
 export function ContentBlockRenderer({
@@ -36,6 +38,7 @@ export function ContentBlockRenderer({
   t,
   onToggleThinking,
   findToolResult,
+  onNavigateToDependencySettings,
 }: ContentBlockRendererProps): React.ReactElement | null {
   // `isStreaming` arriving here is message-level: it stays true for the whole
   // assistant turn, including tool round-trips and the wait for tool results.
@@ -102,6 +105,16 @@ export function ContentBlockRenderer({
 
   if (block.type === 'task_notification') {
     return <TaskNotificationBlock block={block} />;
+  }
+
+  if (block.type === 'local_command_output') {
+    return (
+      <LocalCommandOutputBlock
+        block={block}
+        t={t}
+        onNavigateToDependencySettings={onNavigateToDependencySettings}
+      />
+    );
   }
 
   return null;

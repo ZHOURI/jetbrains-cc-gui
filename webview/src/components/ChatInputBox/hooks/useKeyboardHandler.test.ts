@@ -391,6 +391,69 @@ describe('useKeyboardHandler', () => {
     expect(submittedOnEnterRef.current).toBe(false);
   });
 
+  it('opens Agent View when ← is pressed twice on an empty composer', () => {
+    const onOpenAgentView = vi.fn();
+    const options = keyboardOptions({ isInputEmpty: () => true, onOpenAgentView });
+    const { result } = renderHook(() => useKeyboardHandler(options));
+
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+    const second = reactKeyEvent({ key: 'ArrowLeft' });
+    result.current.onKeyDown(second);
+
+    expect(onOpenAgentView).toHaveBeenCalledTimes(1);
+    expect(second.preventDefault).toHaveBeenCalled();
+    expect(second.stopPropagation).toHaveBeenCalled();
+
+    // The gesture resets after firing: a third press must not reopen it.
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+    expect(onOpenAgentView).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores the double-← gesture outside an empty composer', () => {
+    const onOpenAgentView = vi.fn();
+    const options = keyboardOptions({ isInputEmpty: () => false, onOpenAgentView });
+    const { result } = renderHook(() => useKeyboardHandler(options));
+
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+
+    expect(onOpenAgentView).not.toHaveBeenCalled();
+  });
+
+  it('resets the double-← gesture on another key', () => {
+    const onOpenAgentView = vi.fn();
+    const options = keyboardOptions({ isInputEmpty: () => true, onOpenAgentView });
+    const { result } = renderHook(() => useKeyboardHandler(options));
+
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+    result.current.onKeyDown(reactKeyEvent({ key: 'x' }));
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+
+    expect(onOpenAgentView).not.toHaveBeenCalled();
+  });
+
+  it('rejects modified, repeated and stale double-← presses', () => {
+    const onOpenAgentView = vi.fn();
+    const options = keyboardOptions({ isInputEmpty: () => true, onOpenAgentView });
+    const { result } = renderHook(() => useKeyboardHandler(options));
+
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft', ctrlKey: true }));
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft', ctrlKey: true }));
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft', repeat: true }));
+    result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+    expect(onOpenAgentView).not.toHaveBeenCalled();
+
+    const now = vi.spyOn(Date, 'now');
+    try {
+      now.mockReturnValueOnce(1_000).mockReturnValueOnce(1_600);
+      result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+      result.current.onKeyDown(reactKeyEvent({ key: 'ArrowLeft' }));
+      expect(onOpenAgentView).not.toHaveBeenCalled();
+    } finally {
+      now.mockRestore();
+    }
+  });
+
   it('resets submit refs on key up', () => {
     const handleSubmit = vi.fn();
     const submittedOnEnterRef = { current: true };

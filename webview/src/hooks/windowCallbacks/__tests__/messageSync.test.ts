@@ -16,6 +16,8 @@ import {
   preserveLatestMessagesOnShrink,
   preserveMessageIdentity,
   preserveStreamingAssistantContent,
+  reinsertLocalCommandMessages,
+  isLocalCommandOutputMessage,
   stripDuplicateTrailingToolMessages,
   stripUuidFromRaw,
 } from '../messageSync';
@@ -1561,5 +1563,86 @@ describe('ensureRawTextCovers', () => {
       { type: 'text', text: 'Step 2 done.' },
     ]);
     expect(ensureRawTextCovers(preToolTextRaw, 'Step 1. ')).toBe(preToolTextRaw);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// reinsertLocalCommandMessages
+// ---------------------------------------------------------------------------
+
+const backendMessage = (uuid: string, type: ClaudeMessage['type'] = 'user'): ClaudeMessage => ({
+  type,
+  content: `text-${uuid}`,
+  timestamp: new Date().toISOString(),
+  raw: { uuid, message: { content: [] } },
+});
+
+const localCard = (
+  uuid: string,
+  anchorUuid: string | null,
+  anchorIndex = -1,
+): ClaudeMessage => ({
+  type: 'assistant',
+  content: '',
+  timestamp: new Date().toISOString(),
+  raw: {
+    uuid,
+    isLocalCommandOutput: true,
+    localCommandOutput: { type: 'local_command_output', command: '/status', state: 'ready' },
+    localCommandAnchorUuid: anchorUuid,
+    localCommandAnchorIndex: anchorIndex,
+  },
+});
+
+const uuids = (messages: ClaudeMessage[]) => messages.map((m) => getRawUuid(m));
+
+describe('reinsertLocalCommandMessages', () => {
+  it('detects local command cards', () => {
+    expect(isLocalCommandOutputMessage(localCard('card', null))).toBe(true);
+    expect(isLocalCommandOutputMessage(backendMessage('a'))).toBe(false);
+    expect(isLocalCommandOutputMessage(undefined)).toBe(false);
+  });
+
+  it('puts a dropped card back after its uuid anchor', () => {
+    const prev = [backendMessage('a'), backendMessage('b'), localCard('card-1', 'b', 1)];
+    const next = [backendMessage('a'), backendMessage('b'), backendMessage('c')];
+    expect(uuids(reinsertLocalCommandMessages(prev, next)))
+      .toEqual(['a', 'b', 'card-1', 'c']);
+  });
+
+  it('appends cards whose anchor disappeared', () => {
+    const prev = [backendMessage('a'), localCard('card-1', 'missing', 0)];
+    const next = [backendMessage('b')];
+    expect(uuids(reinsertLocalCommandMessages(prev, next))).toEqual(['b', 'card-1']);
+  });
+
+  it('keeps the original order of several cards sharing an anchor', () => {
+    const prev = [
+      backendMessage('a'),
+      backendMessage('b'),
+      localCard('card-1', 'b', 1),
+      localCard('card-2', 'b', 1),
+    ];
+    const next = [backendMessage('a'), backendMessage('b')];
+    expect(uuids(reinsertLocalCommandMessages(prev, next)))
+      .toEqual(['a', 'b', 'card-1', 'card-2']);
+  });
+
+  it('does not duplicate cards already present in the snapshot', () => {
+    const card = localCard('card-1', 'a', 0);
+    const prev = [backendMessage('a'), card];
+    const next = [backendMessage('a'), card];
+    expect(reinsertLocalCommandMessages(prev, next)).toBe(next);
+  });
+
+  it('falls back to the recorded anchor index when the uuid is unknown', () => {
+    const prev = [backendMessage('a'), localCard('card-1', null, 0)];
+    const next = [backendMessage('x'), backendMessage('y')];
+    expect(uuids(reinsertLocalCommandMessages(prev, next))).toEqual(['x', 'card-1', 'y']);
+  });
+
+  it('returns the snapshot untouched when nothing was dropped', () => {
+    const next = [backendMessage('a')];
+    expect(reinsertLocalCommandMessages([backendMessage('a')], next)).toBe(next);
   });
 });

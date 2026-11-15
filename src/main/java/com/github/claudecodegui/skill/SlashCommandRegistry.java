@@ -57,6 +57,18 @@ public final class SlashCommandRegistry {
             new SlashCommand("/plan", "Switch to plan mode", "builtin"),
             new SlashCommand("/resume", "Resume a previous conversation", "builtin"),
             new SlashCommand("/review", "Review a pull request", "builtin"),
+            // GUI-local commands (handled by the webview, never sent to the model)
+            new SlashCommand("/status", "Show plugin, IDE, runtime and session status", "builtin"),
+            new SlashCommand("/help", "List available slash commands", "builtin"),
+            new SlashCommand("/config", "Open plugin settings", "builtin"),
+            new SlashCommand("/model", "Open model and provider settings", "builtin"),
+            new SlashCommand("/permissions", "Open permission settings", "builtin"),
+            new SlashCommand("/memory", "Show memory file locations", "builtin"),
+            new SlashCommand("/agents", "Open agent settings", "builtin"),
+            new SlashCommand("/hooks", "Show hook configuration files", "builtin"),
+            new SlashCommand("/export", "Export the current session", "builtin"),
+            new SlashCommand("/cost", "Open usage statistics", "builtin"),
+            new SlashCommand("/doctor", "Diagnose Node, SDK and CLI environment", "builtin"),
             // Bundled skills (userInvocable, no ANT-only restriction)
             new SlashCommand("/batch", "Execute large-scale changes in parallel across isolated worktrees", "bundled"),
             new SlashCommand("/claude-api", "Build apps with the Claude API or Anthropic SDK", "bundled"),

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { SendShortcut } from '../types.js';
 import {
@@ -10,6 +10,7 @@ import {
   triageEnterKeyDown,
 } from '../utils/enterKeyGuard.js';
 import type { EnterKeyRefs } from '../utils/enterKeyGuard.js';
+import { isDoubleArrowLeft, nextArrowLeftMark } from '../utils/doubleArrowLeft.js';
 
 interface CompletionWithKeyDown {
   isOpen: boolean;
@@ -39,6 +40,10 @@ export interface UseKeyboardHandlerOptions extends EnterKeyRefs {
   }) => boolean;
   /** Inline history completion (Tab to apply) */
   inlineCompletion?: InlineCompletionHandler;
+  /** Whether the composer is empty; the double-← gesture only fires there. */
+  isInputEmpty?: () => boolean;
+  /** Pressing ← twice on an empty composer opens the Agent View panel. */
+  onOpenAgentView?: () => void;
   handleSubmit: () => void;
 }
 
@@ -63,6 +68,8 @@ export function useKeyboardHandler({
   handleMacCursorMovement,
   handleHistoryKeyDown,
   inlineCompletion,
+  isInputEmpty,
+  onOpenAgentView,
   completionSelectedRef,
   submittedOnEnterRef,
   handleSubmit,
@@ -71,6 +78,7 @@ export function useKeyboardHandler({
     () => ({ submittedOnEnterRef, completionSelectedRef, isComposingRef, lastCompositionEndTimeRef }),
     [submittedOnEnterRef, completionSelectedRef, isComposingRef, lastCompositionEndTimeRef]
   );
+  const lastArrowLeftAtRef = useRef<number | null>(null);
 
   const onKeyDown = useCallback(
     (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -89,6 +97,23 @@ export function useKeyboardHandler({
         // but must not replace the draft through an open completion menu.
         return;
       }
+
+      // Track the double-← gesture on every keydown so any other key resets it.
+      const arrowLeftEvent = {
+        key: e.key,
+        metaKey: e.metaKey,
+        ctrlKey: e.ctrlKey,
+        altKey: e.altKey,
+        shiftKey: e.shiftKey,
+        repeat: e.nativeEvent.repeat,
+        isComposing: e.nativeEvent.isComposing,
+      };
+      const arrowLeftNow = Date.now();
+      const inputEmpty = e.key === 'ArrowLeft' && (isInputEmpty?.() ?? false);
+      const doubleArrowLeft =
+        onOpenAgentView != null &&
+        isDoubleArrowLeft(lastArrowLeftAtRef.current, arrowLeftEvent, arrowLeftNow, inputEmpty);
+      lastArrowLeftAtRef.current = nextArrowLeftMark(arrowLeftEvent, arrowLeftNow, inputEmpty);
 
       if (handleMacCursorMovement(e)) return;
 
@@ -127,6 +152,15 @@ export function useKeyboardHandler({
         }
       }
 
+      if (doubleArrowLeft) {
+        // A third press must start a fresh gesture, not reopen the panel.
+        lastArrowLeftAtRef.current = null;
+        e.preventDefault();
+        e.stopPropagation();
+        onOpenAgentView?.();
+        return;
+      }
+
       if (handleHistoryKeyDown(e)) return;
 
       if (!enterKey || !isSendKey(sendShortcut, e)) return;
@@ -145,6 +179,8 @@ export function useKeyboardHandler({
       dollarCommandCompletion,
       handleHistoryKeyDown,
       inlineCompletion,
+      isInputEmpty,
+      onOpenAgentView,
       sendShortcut,
       enterKeyRefs,
       completionSelectedRef,

@@ -77,6 +77,7 @@ const App = () => {
     handleOpenRewindSelectDialog, handleNavigateToProviderSettings, wrappedHandleProviderSelect,
     createNewSession, loadHistorySession, deleteHistorySession, deleteHistorySessions,
     exportHistorySession, toggleFavoriteSession, updateHistoryTitle, convertToCliSession,
+    beginAgentSessionTransition,
     showNewSessionConfirm, handleConfirmNewSession, handleCancelNewSession,
     showInterruptConfirm, handleConfirmInterrupt, handleCancelInterrupt,
     handleRewindSelect, handleRewindSelectCancel, handleRewindConfirm, handleRewindCancel,
@@ -216,6 +217,7 @@ const App = () => {
         currentProvider={model.currentProvider}
         permissionDialogTimeoutSeconds={permissionDialogTimeoutSeconds}
         onModeSelect={model.handleModeSelect}
+        onBeginAgentSessionTransition={beginAgentSessionTransition}
       />
     </SubagentStateContext.Provider>
   );

@@ -200,6 +200,90 @@
       "timeUnknown": "时间未知",
       "turnTime": "回合开始时间"
     },
+    "localCommand": {
+      "loading": "加载中…",
+      "timeout": "命令执行超时，请重试。",
+      "failed": "命令执行失败",
+      "found": "已找到",
+      "notFound": "未找到",
+      "installed": "已安装",
+      "notInstalled": "未安装",
+      "nodeAvailable": "Node.js 可用",
+      "nodeUnavailable": "未找到 Node.js",
+      "openDependencySettings": "打开依赖管理",
+      "open": "打开",
+      "usage": "{{command}} 不接受参数",
+      "bridgeUnavailable": "IDE 桥接当前不可用",
+      "hooksConfigured": "已配置 hooks",
+      "hooksEmpty": "未配置 hooks",
+      "status": {
+        "title": "状态",
+        "subtitle": "插件、运行时与会话信息",
+        "environment": "环境",
+        "session": "会话",
+        "pluginVersion": "插件版本",
+        "ideVersion": "IDE 版本",
+        "nodeVersion": "Node 版本",
+        "sdkVersion": "SDK 版本",
+        "javaVersion": "Java 版本",
+        "os": "操作系统",
+        "provider": "服务提供方",
+        "model": "模型",
+        "permissionMode": "权限模式",
+        "sessionId": "会话 ID",
+        "cwd": "工作目录"
+      },
+      "doctor": {
+        "title": "环境诊断",
+        "subtitle": "Node、SDK 与 CLI 工具诊断",
+        "node": "Node.js",
+        "nodeAvailability": "可用性",
+        "nodeVersion": "版本",
+        "nodePath": "路径",
+        "sdk": "Agent SDK",
+        "cliTools": "CLI 工具",
+        "none": "未检测到 CLI 工具",
+        "note": "如有依赖缺失，请在依赖管理中安装。"
+      },
+      "memory": {
+        "title": "记忆文件",
+        "subtitle": "当前会话加载的指令文件",
+        "userMemory": "用户记忆",
+        "projectMemory": "项目记忆",
+        "projectLocalMemory": "项目本地记忆",
+        "codexUserMemory": "用户 AGENTS.md",
+        "codexProjectMemory": "项目 AGENTS.md",
+        "empty": "未找到记忆文件。"
+      },
+      "hooks": {
+        "title": "Hook 配置",
+        "subtitle": "可定义 hooks 的设置文件",
+        "userSettings": "用户设置",
+        "projectSettings": "项目设置",
+        "projectLocalSettings": "项目本地设置",
+        "codexConfig": "Codex 配置",
+        "empty": "未找到 hook 配置文件。"
+      },
+      "help": {
+        "title": "本地命令",
+        "subtitle": "由 GUI 本地处理、不会调用模型的命令",
+        "status": "查看插件、运行时与会话状态",
+        "doctor": "诊断 Node、SDK 与 CLI 环境",
+        "memory": "查看记忆文件位置",
+        "hooks": "查看 hook 配置文件",
+        "export": "导出当前会话",
+        "config": "打开插件设置",
+        "model": "打开模型与服务设置",
+        "permissions": "打开权限设置",
+        "agents": "打开智能体设置",
+        "cost": "打开用量统计",
+        "note": "其他斜杠命令会发送给模型或由当前服务提供方处理。"
+      },
+      "export": {
+        "started": "正在导出当前会话…",
+        "noSession": "请先开始一段对话再导出。"
+      }
+    },
     "codexCompactUsage": "请直接使用 /compact，无需参数",
     "codexCompactStarted": "Codex 正在压缩会话上下文",
     "codexReviewUsage": "请直接使用 /review，无需参数",
@@ -2506,6 +2590,34 @@
     "enableDescription": "开启后，编辑器中当前打开的文件路径将发送给 AI。注意：仅传递文件路径，不会传递文件内容。",
     "enable": "开启",
     "cancel": "取消"
+  },
+  "agentView": {
+    "title": "Agent View",
+    "loading": "正在加载会话…",
+    "empty": "暂无会话",
+    "untitled": "未命名会话",
+    "current": "当前",
+    "unread": "有未读输出",
+    "attach": "切换",
+    "stop": "停止",
+    "confirmStop": "确认停止",
+    "newSession": "新建会话",
+    "refresh": "刷新",
+    "hint": "↑/↓ 选择 · Enter 切换 · Esc 关闭",
+    "messageCount_other": "{{count}} 条消息",
+    "status": {
+      "idle": "空闲",
+      "streaming": "运行中",
+      "waiting": "等待确认"
+    },
+    "errors": {
+      "unavailable": "Agent View 当前不可用",
+      "list_failed": "无法加载会话列表",
+      "invalid_request": "Agent View 请求无效",
+      "not_found": "该会话已不存在",
+      "limit": "最多同时运行 5 个会话",
+      "internal_error": "Agent View 请求失败"
+    }
   },
   "contextUsage": {
     "title": "上下文使用",

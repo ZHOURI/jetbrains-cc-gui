@@ -217,6 +217,16 @@ interface Window {
   onHistoryDeleteResult?: (json: string) => void;
 
   /**
+   * Agent View panel payloads (see types/index.ts AgentView*).
+   * onAgentViewSessions also arrives unsolicited (empty requestId) whenever the
+   * backend registry changes, so the panel stays live without polling alone.
+   */
+  onAgentViewSessions?: (json: string) => void;
+  onAgentViewAttached?: (json: string) => void;
+  onAgentViewStopped?: (json: string) => void;
+  onAgentViewError?: (json: string) => void;
+
+  /**
    * Add user message to chat (used for external Quick Fix feature)
    * Immediately shows the user's message in the chat UI before AI response
    */
@@ -583,6 +593,15 @@ interface Window {
    * Update dollar commands list (for $ autocomplete)
    */
   updateDollarCommands?: (json: string) => void;
+
+  /**
+   * Backend data for GUI-local slash commands (/status, /doctor, /memory, /hooks).
+   * Payload: { requestId, kind, status?, diagnostics?, memoryFiles?, hookFiles?, error? }
+   */
+  onStatusInfo?: (json: string) => void;
+
+  /** Buffers a status payload that arrives before the webview registers onStatusInfo. */
+  __pendingStatusInfo?: string;
 
   /**
    * Pending dollar commands payload before callback registration

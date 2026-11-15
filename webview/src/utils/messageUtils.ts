@@ -584,6 +584,15 @@ export function getContentBlocks(
   normalizeBlocksFn: (raw?: ClaudeRawMessage | string) => ClaudeContentBlock[] | null,
   localizeMessage: LocalizeMessageFn
 ): ClaudeContentBlock[] {
+  // GUI-local command cards carry their whole payload on raw — message.content
+  // is intentionally empty so normalizeBlocks never sees them.
+  if (typeof message.raw === 'object' && message.raw !== null) {
+    const rawObj = message.raw as Record<string, unknown>;
+    if (rawObj.isLocalCommandOutput === true && rawObj.localCommandOutput) {
+      return [rawObj.localCommandOutput as ClaudeContentBlock];
+    }
+  }
+
   // Compact notification messages carry items in raw.compactItems
   if (message.type === MESSAGE_TYPES.COMPACT_NOTIFICATION) {
     const rawObj = typeof message.raw === 'object' ? (message.raw as Record<string, unknown> | null) : null;
@@ -716,6 +725,12 @@ export function mergeConsecutiveAssistantMessages(
   const shouldMergeAssistantMessage = (previous: ClaudeMessage, next: ClaudeMessage): boolean => {
     const previousRaw = typeof previous.raw === 'object' ? previous.raw : null;
     const nextRaw = typeof next.raw === 'object' ? next.raw : null;
+    // Local command cards are standalone UI elements — never merge them into a
+    // neighbouring assistant bubble (or let them absorb one).
+    if ((previousRaw as Record<string, unknown> | null)?.isLocalCommandOutput === true
+      || (nextRaw as Record<string, unknown> | null)?.isLocalCommandOutput === true) {
+      return false;
+    }
     const previousNativeTurn = previousRaw?.codexTurnId;
     const nextNativeTurn = nextRaw?.codexTurnId;
     if (typeof previousNativeTurn === 'string' || typeof nextNativeTurn === 'string') {

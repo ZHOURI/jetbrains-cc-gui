@@ -200,6 +200,90 @@
       "timeUnknown": "Time unavailable",
       "turnTime": "Turn start time"
     },
+    "localCommand": {
+      "loading": "Loading…",
+      "timeout": "The command timed out. Please try again.",
+      "failed": "Command failed",
+      "found": "Found",
+      "notFound": "Not found",
+      "installed": "Installed",
+      "notInstalled": "Not installed",
+      "nodeAvailable": "Node.js available",
+      "nodeUnavailable": "Node.js not found",
+      "openDependencySettings": "Open dependency settings",
+      "open": "Open",
+      "usage": "{{command}} does not take arguments",
+      "bridgeUnavailable": "The IDE bridge is unavailable right now",
+      "hooksConfigured": "Hooks configured",
+      "hooksEmpty": "No hooks configured",
+      "status": {
+        "title": "Status",
+        "subtitle": "Plugin, runtime and session information",
+        "environment": "Environment",
+        "session": "Session",
+        "pluginVersion": "Plugin version",
+        "ideVersion": "IDE version",
+        "nodeVersion": "Node version",
+        "sdkVersion": "SDK version",
+        "javaVersion": "Java version",
+        "os": "Operating system",
+        "provider": "Provider",
+        "model": "Model",
+        "permissionMode": "Permission mode",
+        "sessionId": "Session ID",
+        "cwd": "Working directory"
+      },
+      "doctor": {
+        "title": "Doctor",
+        "subtitle": "Node, SDK and CLI diagnostics",
+        "node": "Node.js",
+        "nodeAvailability": "Availability",
+        "nodeVersion": "Version",
+        "nodePath": "Path",
+        "sdk": "Agent SDK",
+        "cliTools": "CLI tools",
+        "none": "No CLI tools detected",
+        "note": "If dependencies are missing, install them from the dependency settings."
+      },
+      "memory": {
+        "title": "Memory files",
+        "subtitle": "Instructions loaded for this session",
+        "userMemory": "User memory",
+        "projectMemory": "Project memory",
+        "projectLocalMemory": "Project local memory",
+        "codexUserMemory": "User AGENTS.md",
+        "codexProjectMemory": "Project AGENTS.md",
+        "empty": "No memory files were found."
+      },
+      "hooks": {
+        "title": "Hook configuration",
+        "subtitle": "Settings files that can define hooks",
+        "userSettings": "User settings",
+        "projectSettings": "Project settings",
+        "projectLocalSettings": "Project local settings",
+        "codexConfig": "Codex config",
+        "empty": "No hook configuration files were found."
+      },
+      "help": {
+        "title": "Local commands",
+        "subtitle": "Commands handled by the GUI without calling the model",
+        "status": "Show plugin, runtime and session status",
+        "doctor": "Diagnose Node, SDK and CLI environment",
+        "memory": "Show memory file locations",
+        "hooks": "Show hook configuration files",
+        "export": "Export the current session",
+        "config": "Open plugin settings",
+        "model": "Open model and provider settings",
+        "permissions": "Open permission settings",
+        "agents": "Open agent settings",
+        "cost": "Open usage statistics",
+        "note": "Other slash commands are sent to the model or handled by the active provider."
+      },
+      "export": {
+        "started": "Exporting the current session…",
+        "noSession": "Start a conversation before exporting."
+      }
+    },
     "codexCompactUsage": "Use /compact without arguments",
     "codexCompactStarted": "Codex is compacting the conversation",
     "codexReviewUsage": "Use /review without arguments",
@@ -2502,6 +2586,35 @@
     "enableDescription": "When enabled, the currently opened file path in the editor will be sent to AI. Note: only the file path is transmitted, not the file content.",
     "enable": "Enable",
     "cancel": "Cancel"
+  },
+  "agentView": {
+    "title": "Agent View",
+    "loading": "Loading sessions...",
+    "empty": "No sessions yet",
+    "untitled": "Untitled session",
+    "current": "current",
+    "unread": "Unread output",
+    "attach": "Attach",
+    "stop": "Stop",
+    "confirmStop": "Confirm stop",
+    "newSession": "New session",
+    "refresh": "Refresh",
+    "hint": "↑/↓ select · Enter attach · Esc close",
+    "messageCount_one": "{{count}} message",
+    "messageCount_other": "{{count}} messages",
+    "status": {
+      "idle": "idle",
+      "streaming": "running",
+      "waiting": "needs input"
+    },
+    "errors": {
+      "unavailable": "Agent View is not available",
+      "list_failed": "Could not load sessions",
+      "invalid_request": "Invalid Agent View request",
+      "not_found": "That session is no longer available",
+      "limit": "At most 5 sessions can run at once",
+      "internal_error": "Agent View request failed"
+    }
   },
   "contextUsage": {
     "title": "Context Usage",

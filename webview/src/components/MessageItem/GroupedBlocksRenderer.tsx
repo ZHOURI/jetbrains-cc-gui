@@ -62,6 +62,7 @@ interface GroupedBlockViewProps {
   onToggleThinking: (blockIndex: number) => void;
   findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined;
   t: TFunction;
+  onNavigateToDependencySettings?: () => void;
 }
 
 const GroupedBlockView = memo(function GroupedBlockView({
@@ -76,6 +77,7 @@ const GroupedBlockView = memo(function GroupedBlockView({
   onToggleThinking,
   findToolResult,
   t,
+  onNavigateToDependencySettings,
 }: GroupedBlockViewProps) {
   if (grouped.type === 'read_group') {
     const readItems = grouped.blocks.map((b) => {
@@ -185,6 +187,7 @@ const GroupedBlockView = memo(function GroupedBlockView({
             t={t}
             onToggleThinking={() => {}}
             findToolResult={findToolResult}
+            onNavigateToDependencySettings={onNavigateToDependencySettings}
           />
         </div>
       );
@@ -229,6 +232,7 @@ const GroupedBlockView = memo(function GroupedBlockView({
         t={t}
         onToggleThinking={() => onToggleThinking(blockIndex)}
         findToolResult={findToolResult}
+        onNavigateToDependencySettings={onNavigateToDependencySettings}
       />
     </div>
   );
@@ -328,6 +332,7 @@ export const GroupedBlocksRenderer = memo(function GroupedBlocksRenderer({
           onToggleThinking={onToggleThinking}
           findToolResult={findToolResult}
           t={t}
+          onNavigateToDependencySettings={onNavigateToDependencySettings}
         />
       ))}
     </>
